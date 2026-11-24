@@ -1,0 +1,5 @@
+.qodo/
+*.zip
+nk-report-analytics/
+.DS_Store
+Thumbs.db
