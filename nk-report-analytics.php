@@ -3,7 +3,7 @@
  * Plugin Name:       Netweek Report Analytics
  * Plugin URI:        https://netweek.it
  * Description:       Dashboard editoriale interattiva basata su Google Sheets e Service Account, con selezione dinamica di fogli e tab dal backend WordPress.
- * Version:           1.7.1
+ * Version:           1.7.2
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Netweek
@@ -13,7 +13,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'NK_REPORT_VERSION', '1.7.1' );
+define( 'NK_REPORT_VERSION', '1.7.2' );
 define( 'NK_REPORT_PLUGIN_FILE', __FILE__ );
 define( 'NK_REPORT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NK_REPORT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -76,11 +76,13 @@ function nk_report_is_visitor_authorized( $settings = null ) {
 		return false;
 	}
 
-	if ( empty( $_COOKIE['nk_report_access'] ) ) {
+	$cookie_name = 'wp-postpass_nk_report';
+	if ( empty( $_COOKIE[ $cookie_name ] ) && empty( $_COOKIE['nk_report_access'] ) ) {
 		return false;
 	}
 
-	$raw_cookie = sanitize_text_field( wp_unslash( $_COOKIE['nk_report_access'] ) );
+	$raw_raw    = ! empty( $_COOKIE[ $cookie_name ] ) ? $_COOKIE[ $cookie_name ] : $_COOKIE['nk_report_access'];
+	$raw_cookie = sanitize_text_field( wp_unslash( $raw_raw ) );
 	$parts      = explode( '|', $raw_cookie, 2 );
 	if ( 2 !== count( $parts ) ) {
 		return false;

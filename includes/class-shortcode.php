@@ -24,6 +24,13 @@ class NK_Shortcode {
 	 * @return string
 	 */
 	public function render_shortcode() {
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true );
+		}
+		if ( ! headers_sent() ) {
+			nocache_headers();
+		}
+
 		$settings = nk_report_get_settings();
 
 		if ( ! nk_report_can_view_dashboard() ) {
@@ -250,10 +257,16 @@ class NK_Shortcode {
 					headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
 					body: body.toString()
 				})
-				.then(function(r){ return r.json(); })
+				.then(function(r){
+					return r.text().then(function(txt){
+						try { return JSON.parse(txt); } catch(e) { return { success: false, data: { message: 'Sessione scaduta o pagina in cache. Ricarica la pagina e riprova.' } }; }
+					});
+				})
 				.then(function(res){
 					if (res && res.success) {
-						window.location.reload();
+						var url = new URL(window.location.href);
+						url.searchParams.set('nk_unlocked', Date.now());
+						window.location.replace(url.toString());
 						return;
 					}
 					btn.disabled = false;

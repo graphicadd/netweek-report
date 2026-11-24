@@ -112,18 +112,19 @@ class NK_Ajax_Handler {
 		$value   = $expires . '|' . $sig;
 
 		setcookie(
-			'nk_report_access',
+			'wp-postpass_nk_report',
 			$value,
 			array(
 				'expires'  => $expires,
-				'path'     => COOKIEPATH ? COOKIEPATH : '/',
-				'domain'   => COOKIE_DOMAIN,
+				'path'     => '/',
+				'domain'   => defined( 'COOKIE_DOMAIN' ) && COOKIE_DOMAIN ? COOKIE_DOMAIN : '',
 				'secure'   => is_ssl(),
 				'httponly' => true,
 				'samesite' => 'Lax',
 			)
 		);
 
+		nocache_headers();
 		wp_send_json_success( array( 'authorized' => true ) );
 	}
 
