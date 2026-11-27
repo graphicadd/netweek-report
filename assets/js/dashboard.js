@@ -863,7 +863,7 @@
 						itemHeight: 110,
 						textStyle: { color: '#475569', fontFamily: 'Roboto, sans-serif', fontSize: 11 },
 						inRange: {
-							color: ['#eaf3fb', '#99c7ea', '#3b89c9', '#00599C', '#003865']
+							color: ['#e8f1f8', '#93c5fd', '#00599C', '#f59e0b', '#dc2626']
 						}
 					},
 					series: [{
@@ -882,7 +882,7 @@
 						emphasis: {
 							label: { show: false },
 							itemStyle: {
-								areaColor: '#00467A',
+								areaColor: '#0f172a',
 								borderColor: '#ffffff',
 								borderWidth: 1.8
 							}
@@ -890,9 +890,9 @@
 						select: {
 							label: { show: false },
 							itemStyle: {
-								areaColor: '#003865',
+								areaColor: '#0f172a',
 								borderColor: '#ffffff',
-								borderWidth: 2
+								borderWidth: 2.2
 							}
 						},
 						data: mapData
