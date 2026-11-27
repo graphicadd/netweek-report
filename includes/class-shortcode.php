@@ -76,6 +76,7 @@ class NK_Shortcode {
 				<span class="nk-tab-indicator" aria-hidden="true"></span>
 				<button type="button" class="nk-tab is-active" data-view="province"><?php esc_html_e( 'Province', 'nk-report-analytics' ); ?></button>
 				<button type="button" class="nk-tab" data-view="regioni"><?php esc_html_e( 'Regioni', 'nk-report-analytics' ); ?></button>
+				<button type="button" class="nk-tab" data-view="mappa"><?php esc_html_e( 'Mappa Italia', 'nk-report-analytics' ); ?></button>
 				<button type="button" class="nk-tab" data-view="nazionale"><?php esc_html_e( 'Nazionale', 'nk-report-analytics' ); ?></button>
 				<button type="button" class="nk-tab" data-view="verticali"><?php esc_html_e( 'Verticali', 'nk-report-analytics' ); ?></button>
 				<button type="button" class="nk-tab" data-view="tutte"><?php esc_html_e( 'Tutte le pubblicate', 'nk-report-analytics' ); ?></button>
@@ -150,8 +151,35 @@ class NK_Shortcode {
 				<span><strong><?php esc_html_e( 'Nota sulle metriche:', 'nk-report-analytics' ); ?></strong> <?php esc_html_e( 'i dati mostrati si riferiscono alle notizie generate dal sistema di Intelligenza Artificiale; il numero effettivo di articoli pubblicati può variare in base alle scelte editoriali della redazione.', 'nk-report-analytics' ); ?></span>
 			</div>
 
+			<!-- Mappa Radar Italia (vista dedicata) -->
+			<section class="nk-panel nk-map-panel nk-hidden" id="nk-map-panel">
+				<div class="nk-map-layout">
+					<div class="nk-map-stage">
+						<div class="nk-panel-header">
+							<div>
+								<h3 class="nk-panel-title"><?php esc_html_e( 'Mappa Radar Italia — Pubblicazioni per Regione', 'nk-report-analytics' ); ?></h3>
+								<p class="nk-panel-subtitle"><?php esc_html_e( 'Passa il mouse per i dettagli o clicca su una regione per esplorare i dati delle singole province.', 'nk-report-analytics' ); ?></p>
+							</div>
+						</div>
+						<div id="nk-italy-map" class="nk-italy-map-canvas"></div>
+					</div>
+					<aside class="nk-map-sidebar" id="nk-map-sidebar">
+						<div class="nk-map-sidebar-header">
+							<div>
+								<h4 class="nk-map-sidebar-title" id="nk-map-sidebar-title"><?php esc_html_e( 'Classifica Regioni', 'nk-report-analytics' ); ?></h4>
+								<p class="nk-map-sidebar-sub" id="nk-map-sidebar-sub"><?php esc_html_e( 'Seleziona una regione sulla mappa o dalla lista', 'nk-report-analytics' ); ?></p>
+							</div>
+							<button type="button" class="nk-btn nk-btn-secondary nk-btn-sm nk-hidden" id="nk-map-back-btn">
+								<?php esc_html_e( '← Tutte le regioni', 'nk-report-analytics' ); ?>
+							</button>
+						</div>
+						<div class="nk-map-detail-list" id="nk-map-detail-list"></div>
+					</aside>
+				</div>
+			</section>
+
 			<!-- Grafico Andamento Giornaliero -->
-			<section class="nk-panel">
+			<section class="nk-panel" id="nk-chart-panel">
 				<div class="nk-panel-header">
 					<div>
 						<h3 class="nk-panel-title" id="nk-chart-title"><?php esc_html_e( 'Andamento giornaliero', 'nk-report-analytics' ); ?></h3>
@@ -168,7 +196,7 @@ class NK_Shortcode {
 			</section>
 
 			<!-- Tabella Analitica Tabulator -->
-			<section class="nk-panel">
+			<section class="nk-panel" id="nk-table-panel">
 				<div class="nk-panel-header nk-table-toolbar">
 					<div class="nk-table-mode-switch">
 						<button type="button" class="nk-mode-btn is-active" data-table-mode="summary"><?php esc_html_e( 'Riepilogo per Dimensione', 'nk-report-analytics' ); ?></button>
@@ -356,9 +384,17 @@ class NK_Shortcode {
 		);
 
 		wp_enqueue_script(
+			'nk-echarts',
+			'https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js',
+			array(),
+			'5.5.1',
+			true
+		);
+
+		wp_enqueue_script(
 			'nk-report-dashboard-js',
 			NK_REPORT_PLUGIN_URL . 'assets/js/dashboard.js',
-			array( 'nk-chartjs', 'nk-tabulator-js', 'nk-flatpickr-it' ),
+			array( 'nk-chartjs', 'nk-tabulator-js', 'nk-flatpickr-it', 'nk-echarts' ),
 			NK_REPORT_VERSION,
 			true
 		);
@@ -371,6 +407,7 @@ class NK_Shortcode {
 				'nonce'           => wp_create_nonce( 'nk_report_frontend_nonce' ),
 				'spreadsheetName' => $settings['spreadsheet_name'] ? $settings['spreadsheet_name'] : $settings['spreadsheet_id'],
 				'tabName'         => $settings['tab_name'],
+				'italyGeoJsonUrl' => NK_REPORT_PLUGIN_URL . 'assets/data/italy-regions.geojson',
 			)
 		);
 	}

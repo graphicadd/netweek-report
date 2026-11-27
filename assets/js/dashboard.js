@@ -53,6 +53,15 @@
 		var tableSearchInput = document.getElementById('nk-table-search');
 		var exportCsvBtn = document.getElementById('nk-export-csv-btn');
 
+		var mapPanel = document.getElementById('nk-map-panel');
+		var chartPanel = document.getElementById('nk-chart-panel');
+		var tablePanel = document.getElementById('nk-table-panel');
+		var mapContainer = document.getElementById('nk-italy-map');
+		var mapSidebarTitle = document.getElementById('nk-map-sidebar-title');
+		var mapSidebarSub = document.getElementById('nk-map-sidebar-sub');
+		var mapBackBtn = document.getElementById('nk-map-back-btn');
+		var mapDetailList = document.getElementById('nk-map-detail-list');
+
 		// Stato applicativo.
 		var state = {
 			rawRows: [],
@@ -65,7 +74,9 @@
 			chart: null,
 			table: null,
 			fpFrom: null,
-			fpTo: null
+			fpTo: null,
+			mapChart: null,
+			italyGeoPromise: null
 		};
 
 		if (typeof flatpickr !== 'undefined') {
@@ -212,7 +223,7 @@
 
 		// Filtra righe in base alla vista attiva (escludendo sempre le notizie scartate).
 		function getViewRows() {
-			if (state.activeView === 'regioni') {
+			if (state.activeView === 'regioni' || state.activeView === 'mappa') {
 				var regionalRows = [];
 				state.rawRows.forEach(function (r) {
 					if (r.m === 'pubblicata' && r.c === 'news_locali' && r.dim !== 'Nazionale') {
@@ -416,7 +427,7 @@
 				kpiTop.textContent = activeDays > 0 ? formatInt(peakVal) : '-';
 				kpiTopSub.textContent = peakDate ? formatDateIt(peakDate) : '';
 			} else {
-				kpiTopLabel.textContent = state.activeView === 'regioni' ? 'Top Regione' : 'Top Provincia / Elemento';
+				kpiTopLabel.textContent = (state.activeView === 'regioni' || state.activeView === 'mappa') ? 'Top Regione' : 'Top Provincia / Elemento';
 				var topName = '-';
 				var topVal = 0;
 				Object.keys(dimTotals).forEach(function (dim) {
@@ -662,16 +673,257 @@
 			renderAll();
 		}
 
+		function escapeHtml(str) {
+			return String(str)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;')
+				.replace(/'/g, '&#039;');
+		}
+
+		function ensureItalyGeoJson() {
+			if (state.italyGeoPromise) {
+				return state.italyGeoPromise;
+			}
+			if (!nkReportConfig.italyGeoJsonUrl || typeof echarts === 'undefined') {
+				return Promise.reject(new Error('Libreria mappa o GeoJSON non disponibili.'));
+			}
+			state.italyGeoPromise = fetch(nkReportConfig.italyGeoJsonUrl)
+				.then(function (res) {
+					if (!res.ok) throw new Error('Impossibile caricare la mappa dell\'Italia.');
+					return res.json();
+				})
+				.then(function (geoJson) {
+					echarts.registerMap('italy', geoJson);
+					return geoJson;
+				});
+			return state.italyGeoPromise;
+		}
+
+		function renderMapSidebar(regionTotals, grandTotal) {
+			if (!mapDetailList) return;
+
+			if (!state.selectedDim) {
+				mapSidebarTitle.textContent = 'Classifica Regioni';
+				mapSidebarSub.textContent = 'Clicca su una regione per vedere le province';
+				if (mapBackBtn) mapBackBtn.classList.add('nk-hidden');
+
+				var sortedRegions = Object.keys(regionTotals)
+					.map(function (name) { return { name: name, total: regionTotals[name] }; })
+					.filter(function (item) { return item.total > 0; })
+					.sort(function (a, b) { return b.total - a.total; });
+
+				if (!sortedRegions.length) {
+					mapDetailList.innerHTML = '<div class="nk-map-empty">Nessun dato disponibile per il periodo selezionato.</div>';
+					return;
+				}
+
+				var maxReg = sortedRegions[0].total || 1;
+				mapDetailList.innerHTML = sortedRegions.map(function (item, idx) {
+					var pctWidth = Math.max(4, Math.round((item.total / maxReg) * 100));
+					var sharePct = grandTotal > 0 ? ((item.total / grandTotal) * 100).toFixed(1) : '0.0';
+					return '<div class="nk-map-item is-clickable" data-region="' + escapeHtml(item.name) + '">'
+						+ '<div class="nk-map-item-top">'
+						+ '<span>' + (idx + 1) + '. ' + escapeHtml(item.name) + '</span>'
+						+ '<span class="nk-map-item-val">' + formatInt(item.total) + '</span>'
+						+ '</div>'
+						+ '<div class="nk-map-bar-track"><div class="nk-map-bar-fill" style="width:' + pctWidth + '%"></div></div>'
+						+ '<div class="nk-map-item-meta"><span>Quota nazionale</span><span>' + sharePct.replace('.', ',') + '%</span></div>'
+						+ '</div>';
+				}).join('');
+
+				mapDetailList.querySelectorAll('.nk-map-item[data-region]').forEach(function (el) {
+					el.addEventListener('click', function () {
+						setSelectedDimension(el.dataset.region);
+					});
+				});
+				return;
+			}
+
+			// Vista dettagliata delle singole province della regione selezionata.
+			var targetRegion = state.selectedDim;
+			var targetLower = targetRegion.toLowerCase();
+			var provRows = state.rawRows.filter(function (r) {
+				if (r.m !== 'pubblicata' || r.c !== 'news_locali' || r.dim === 'Nazionale') return false;
+				if (state.dateFrom && r.d < state.dateFrom) return false;
+				if (state.dateTo && r.d > state.dateTo) return false;
+				return getRegionForProvince(r.dim).toLowerCase() === targetLower;
+			});
+
+			var provSummary = buildSummaryData(provRows);
+			var regionSum = provSummary.reduce(function (acc, p) { return acc + p.totale; }, 0);
+			var regionShare = grandTotal > 0 ? ((regionSum / grandTotal) * 100).toFixed(1) : '0.0';
+
+			mapSidebarTitle.textContent = 'Province — ' + targetRegion;
+			mapSidebarSub.textContent = formatInt(regionSum) + ' articoli (' + regionShare.replace('.', ',') + '% del totale)';
+			if (mapBackBtn) mapBackBtn.classList.remove('nk-hidden');
+
+			if (!provSummary.length) {
+				mapDetailList.innerHTML = '<div class="nk-map-empty">Nessuna provincia con dati in questo periodo.</div>';
+				return;
+			}
+
+			var maxProv = provSummary[0].totale || 1;
+			mapDetailList.innerHTML = provSummary.map(function (p) {
+				var pctWidth = Math.max(4, Math.round((p.totale / maxProv) * 100));
+				return '<div class="nk-map-item">'
+					+ '<div class="nk-map-item-top">'
+					+ '<span>' + escapeHtml(p.dim) + '</span>'
+					+ '<span class="nk-map-item-val">' + formatInt(p.totale) + '</span>'
+					+ '</div>'
+					+ '<div class="nk-map-bar-track"><div class="nk-map-bar-fill" style="width:' + pctWidth + '%"></div></div>'
+					+ '<div class="nk-map-item-meta">'
+					+ '<span>Media: ' + formatDec(p.media) + '/gg</span>'
+					+ '<span>Ultimo gg: ' + formatInt(p.ultimo_giorno) + '</span>'
+					+ '</div>'
+					+ '</div>';
+			}).join('');
+		}
+
+		function renderMapView(periodRows) {
+			if (!mapContainer) return;
+
+			var ALL_REGIONS = [
+				'Abruzzo', 'Basilicata', 'Calabria', 'Campania', 'Emilia-Romagna',
+				'Friuli-Venezia Giulia', 'Lazio', 'Liguria', 'Lombardia', 'Marche',
+				'Molise', 'Piemonte', 'Puglia', 'Sardegna', 'Sicilia', 'Toscana',
+				'Trentino-Alto Adige', 'Umbria', "Valle d'Aosta", 'Veneto'
+			];
+
+			var regionTotals = {};
+			ALL_REGIONS.forEach(function (reg) { regionTotals[reg] = 0; });
+
+			var grandTotal = 0;
+			periodRows.forEach(function (r) {
+				var val = Number(r.n) || 0;
+				grandTotal += val;
+				if (r.dim && regionTotals.hasOwnProperty(r.dim)) {
+					regionTotals[r.dim] += val;
+				}
+			});
+
+			renderMapSidebar(regionTotals, grandTotal);
+
+			ensureItalyGeoJson().then(function () {
+				if (!state.mapChart) {
+					state.mapChart = echarts.init(mapContainer);
+					state.mapChart.on('click', function (params) {
+						if (!params || !params.name) return;
+						if (state.selectedDim.toLowerCase() === params.name.toLowerCase()) {
+							setSelectedDimension('');
+						} else {
+							setSelectedDimension(params.name);
+						}
+					});
+					window.addEventListener('resize', function () {
+						if (state.mapChart && state.activeView === 'mappa') {
+							state.mapChart.resize();
+						}
+					});
+				}
+
+				var mapData = ALL_REGIONS.map(function (reg) {
+					var isSelected = state.selectedDim && state.selectedDim.toLowerCase() === reg.toLowerCase();
+					return {
+						name: reg,
+						value: regionTotals[reg] || 0,
+						selected: Boolean(isSelected)
+					};
+				});
+
+				var maxVal = Math.max.apply(null, mapData.map(function (d) { return d.value; }));
+				if (!maxVal || maxVal < 1) maxVal = 10;
+
+				state.mapChart.setOption({
+					tooltip: {
+						trigger: 'item',
+						backgroundColor: '#0f172a',
+						borderColor: '#0f172a',
+						borderWidth: 0,
+						padding: [10, 14],
+						textStyle: { color: '#ffffff', fontFamily: 'Roboto, sans-serif', fontSize: 13 },
+						formatter: function (params) {
+							var val = Number(params.value) || 0;
+							var share = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1).replace('.', ',') : '0,0';
+							return '<div style="font-weight:700;margin-bottom:4px;font-size:14px;">' + escapeHtml(params.name) + '</div>'
+								+ '<div>Articoli: <strong>' + formatInt(val) + '</strong> (' + share + '%)</div>'
+								+ '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">Clicca per vedere le province</div>';
+						}
+					},
+					visualMap: {
+						min: 0,
+						max: maxVal,
+						left: 12,
+						bottom: 12,
+						text: ['Alto', 'Basso'],
+						calculable: false,
+						orient: 'horizontal',
+						itemWidth: 14,
+						itemHeight: 110,
+						textStyle: { color: '#475569', fontFamily: 'Roboto, sans-serif', fontSize: 11 },
+						inRange: {
+							color: ['#eaf3fb', '#99c7ea', '#3b89c9', '#00599C', '#003865']
+						}
+					},
+					series: [{
+						name: 'Pubblicazioni',
+						type: 'map',
+						map: 'italy',
+						roam: false,
+						selectedMode: 'single',
+						layoutCenter: ['50%', '49%'],
+						layoutSize: '96%',
+						itemStyle: {
+							areaColor: '#f1f5f9',
+							borderColor: '#ffffff',
+							borderWidth: 1.2
+						},
+						emphasis: {
+							label: { show: false },
+							itemStyle: {
+								areaColor: '#00467A',
+								borderColor: '#ffffff',
+								borderWidth: 1.8
+							}
+						},
+						select: {
+							label: { show: false },
+							itemStyle: {
+								areaColor: '#003865',
+								borderColor: '#ffffff',
+								borderWidth: 2
+							}
+						},
+						data: mapData
+					}]
+				}, true);
+
+				state.mapChart.resize();
+			}).catch(function (err) {
+				showError(err.message || 'Errore nel caricamento della mappa.');
+			});
+		}
+
 		function renderAll() {
 			if (nazionaleNotice) {
 				nazionaleNotice.classList.toggle('nk-hidden', state.activeView !== 'nazionale');
 			}
+			var isMap = state.activeView === 'mappa';
+			if (mapPanel) mapPanel.classList.toggle('nk-hidden', !isMap);
+			if (chartPanel) chartPanel.classList.toggle('nk-hidden', isMap);
+			if (tablePanel) tablePanel.classList.toggle('nk-hidden', isMap);
+
 			var periodRows = getFilteredRows(false);
 			var chartKpiRows = getFilteredRows(true);
 
 			renderKpis(chartKpiRows);
-			renderChart(chartKpiRows);
-			renderTable(periodRows);
+			if (isMap) {
+				renderMapView(periodRows);
+			} else {
+				renderChart(chartKpiRows);
+				renderTable(periodRows);
+			}
 		}
 
 		// Caricamento dati via AJAX.
@@ -761,7 +1013,7 @@
 				clearDimBtn.classList.add('nk-hidden');
 
 				if (dimLabel) {
-					dimLabel.textContent = state.activeView === 'regioni' ? 'Regione' : 'Provincia / Elemento';
+					dimLabel.textContent = (state.activeView === 'regioni' || state.activeView === 'mappa') ? 'Regione' : 'Provincia / Elemento';
 				}
 
 				populateDimensionOptions();
@@ -867,6 +1119,12 @@
 		chipReset.addEventListener('click', function () {
 			setSelectedDimension('');
 		});
+
+		if (mapBackBtn) {
+			mapBackBtn.addEventListener('click', function () {
+				setSelectedDimension('');
+			});
+		}
 
 		modeButtons.forEach(function (btn) {
 			btn.addEventListener('click', function () {

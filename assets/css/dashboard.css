@@ -859,6 +859,147 @@
 	}
 }
 
+/* Mappa Radar Italia */
+.nk-dashboard-wrap .nk-map-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr);
+	gap: 24px;
+	align-items: stretch;
+}
+
+@media (max-width: 1024px) {
+	.nk-dashboard-wrap .nk-map-layout {
+		grid-template-columns: 1fr;
+	}
+}
+
+.nk-dashboard-wrap .nk-map-stage {
+	display: flex;
+	flex-direction: column;
+}
+
+.nk-dashboard-wrap .nk-italy-map-canvas {
+	width: 100%;
+	height: 540px;
+	min-height: 460px;
+}
+
+.nk-dashboard-wrap .nk-map-sidebar {
+	display: flex;
+	flex-direction: column;
+	background: rgba(255, 255, 255, 0.72);
+	border: 1px solid rgba(226, 232, 240, 0.9);
+	border-radius: 14px;
+	padding: 18px;
+	max-height: 610px;
+}
+
+.nk-dashboard-wrap .nk-map-sidebar-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 10px;
+	padding-bottom: 12px;
+	margin-bottom: 12px;
+	border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.nk-dashboard-wrap .nk-map-sidebar-title {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--nk-ink);
+}
+
+.nk-dashboard-wrap .nk-map-sidebar-sub {
+	margin: 3px 0 0 0;
+	font-size: 12px;
+	color: var(--nk-ink-subtle);
+}
+
+.nk-dashboard-wrap .nk-btn-sm {
+	height: 30px;
+	padding: 0 12px;
+	font-size: 12px;
+	flex-shrink: 0;
+}
+
+.nk-dashboard-wrap .nk-map-detail-list {
+	flex: 1 1 auto;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding-right: 4px;
+}
+
+.nk-dashboard-wrap .nk-map-item {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	padding: 10px 12px;
+	border-radius: 10px;
+	background: rgba(255, 255, 255, 0.85);
+	border: 1px solid rgba(15, 23, 42, 0.06);
+	transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.12s ease;
+}
+
+.nk-dashboard-wrap .nk-map-item.is-clickable {
+	cursor: pointer;
+}
+
+.nk-dashboard-wrap .nk-map-item.is-clickable:hover {
+	border-color: var(--nk-accent-border);
+	background: #ffffff;
+	transform: translateX(2px);
+}
+
+.nk-dashboard-wrap .nk-map-item-top {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
+	font-size: 13.5px;
+	font-weight: 600;
+	color: var(--nk-ink);
+}
+
+.nk-dashboard-wrap .nk-map-item-val {
+	font-variant-numeric: tabular-nums;
+	color: var(--nk-accent);
+	font-weight: 700;
+}
+
+.nk-dashboard-wrap .nk-map-bar-track {
+	width: 100%;
+	height: 6px;
+	border-radius: 999px;
+	background: rgba(0, 89, 156, 0.10);
+	overflow: hidden;
+}
+
+.nk-dashboard-wrap .nk-map-bar-fill {
+	height: 100%;
+	border-radius: 999px;
+	background: var(--nk-accent);
+	transition: width 0.3s ease;
+}
+
+.nk-dashboard-wrap .nk-map-item-meta {
+	display: flex;
+	justify-content: space-between;
+	font-size: 11.5px;
+	color: var(--nk-ink-subtle);
+	font-variant-numeric: tabular-nums;
+}
+
+.nk-dashboard-wrap .nk-map-empty {
+	padding: 24px 12px;
+	text-align: center;
+	color: var(--nk-ink-subtle);
+	font-size: 13px;
+}
+
 /* Date Picker Input & Flatpickr Glass Theme */
 .nk-dashboard-wrap .nk-field input.nk-date-picker,
 .nk-dashboard-wrap .nk-field input.flatpickr-input {
