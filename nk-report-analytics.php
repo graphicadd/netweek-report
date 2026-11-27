@@ -3,7 +3,7 @@
  * Plugin Name:       Netweek Report Analytics
  * Plugin URI:        https://netweek.it
  * Description:       Dashboard editoriale interattiva basata su Google Sheets e Service Account, con selezione dinamica di fogli e tab dal backend WordPress.
- * Version:           1.8.1
+ * Version:           1.8.2
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Netweek
@@ -13,7 +13,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'NK_REPORT_VERSION', '1.8.1' );
+define( 'NK_REPORT_VERSION', '1.8.2' );
 define( 'NK_REPORT_PLUGIN_FILE', __FILE__ );
 define( 'NK_REPORT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NK_REPORT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

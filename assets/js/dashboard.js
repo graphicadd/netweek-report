@@ -863,7 +863,7 @@
 						itemHeight: 110,
 						textStyle: { color: '#475569', fontFamily: 'Roboto, sans-serif', fontSize: 11 },
 						inRange: {
-							color: ['#e8f1f8', '#93c5fd', '#00599C', '#f59e0b', '#dc2626']
+							color: ['#dbeafe', '#60a5fa', '#fcd34d', '#f97316', '#ea580c']
 						}
 					},
 					series: [{
