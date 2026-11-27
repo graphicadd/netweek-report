@@ -857,13 +857,17 @@
 						left: 12,
 						bottom: 12,
 						text: ['Alto', 'Basso'],
-						calculable: false,
+						calculable: true,
+						hoverLink: true,
 						orient: 'horizontal',
 						itemWidth: 14,
-						itemHeight: 110,
+						itemHeight: 130,
 						textStyle: { color: '#475569', fontFamily: 'Roboto, sans-serif', fontSize: 11 },
 						inRange: {
-							color: ['#dbeafe', '#60a5fa', '#fcd34d', '#f97316', '#ea580c']
+							color: ['#e8f2fb', '#99c7ea', '#3b89c9', '#00599C', '#003865']
+						},
+						outOfRange: {
+							color: ['#f1f5f9']
 						}
 					},
 					series: [{
@@ -882,7 +886,7 @@
 						emphasis: {
 							label: { show: false },
 							itemStyle: {
-								areaColor: '#0f172a',
+								areaColor: '#f97316',
 								borderColor: '#ffffff',
 								borderWidth: 1.8
 							}
